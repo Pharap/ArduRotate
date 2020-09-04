@@ -1,30 +1,83 @@
 #pragma once
+
 #include <FixedPoints.h>
 #include <FixedPointsCommon.h>
-#include "Trig.h"
-#define fixed SQ7x8
 
-struct Vec2{
-  fixed X,Y;
+#include "Trig.h"
+
+struct Vector2
+{
+	SQ7x8 x;
+	SQ7x8 y;
+	
+	Vector2() = default;
+	
+	constexpr Vector2(SQ7x8 x, SQ7x8 y) :
+		x { x }, y { y }
+	{
+	}
+	
+	Vector2 & operator +=(Vector2 other)
+	{
+		this->x += other.x;
+		this->y += other.y;
+		return *this;
+	}
+	
+	Vector2 & operator -=(Vector2 other)
+	{
+		this->x -= other.x;
+		this->y -= other.y;
+		return *this;
+	}
+	
+	template<typename Number>
+	Vector2 & operator *=(Number scale)
+	{
+		this->x *= scale;
+		this->y *= scale;
+		return *this;
+	}
 };
 
-Vec2 AffineTransform(Vec2 Position, Vec2 Transform){
-  Vec2 New;
-  New.X = Position.X + Transform.X;
-  New.Y = Position.Y + Transform.Y;
-  return New;
+constexpr Vector2 operator -(Vector2 vector)
+{
+	return { -vector.x, -vector.y };
 }
 
-Vec2 AffineRotation(Vec2 Position, Vec2 Center ,uint8_t Angle){
-  Vec2 New;
-  float CosAngle = (float)Cos(Angle);
-  float SinAngle = (float)Sin(Angle);
-  
-  Position = AffineTransform(Position, {-Center.X,-Center.Y});
-  
-  New.X = ((float)Position.X * CosAngle) - ((float)Position.Y * SinAngle);
-  New.Y = ((float)Position.X * SinAngle) + ((float)Position.Y * CosAngle);
+constexpr Vector2 operator +(Vector2 left, Vector2 right)
+{
+	return { left.x + right.x, left.y + right.y };
+}
 
-  New = AffineTransform(New, {Center.X, Center.Y});
-  return New;
+constexpr Vector2 operator -(Vector2 left, Vector2 right)
+{
+	return { left.x - right.x, left.y - right.y };
+}
+
+template<typename Number>
+constexpr Vector2 operator *(Vector2 left, Number right)
+{
+	return { left.x * right, left.y * right };
+}
+
+constexpr Vector2 AffineTransform(Vector2 position, Vector2 transform)
+{
+	return position + transform;
+}
+
+Vector2 AffineRotation(Vector2 position, Vector2 centre, Brads angle)
+{
+	const auto cosAngle = fixedCos(angle);
+	const auto sinAngle = fixedSin(angle);
+
+	const Vector2 newPosition = (position - centre);
+
+	const Vector2 vector =
+	{
+		(newPosition.x * cosAngle) - (newPosition.y * sinAngle),
+		(newPosition.x * sinAngle) + (newPosition.y * cosAngle)
+	};
+
+	return AffineTransform(vector, centre);
 }
